@@ -1,13 +1,14 @@
 const sequelize = require("../config/db");
 const httpMessage = require("../constants/httpMessage");
 const User = require("../models/auth.modal");
+const userSession = require("../models/userSession");
 const OTP = require("../models/verification_otps.modal");
 const { message } = require("../validations/schema/signup.schema");
-
+const { v4: uuidV4 } = require("uuid");
 const signUpService = async (req) => {
   try {
     const { username, email, password } = req
-
+    console.log("---------------------------api called sign up------------------------")
     const data = await sequelize.transaction(async (t) => {
       // Create user
       const user = await User.create({ username, email, password }, { transaction: t });
@@ -129,7 +130,7 @@ const verifyUserService = async (req) => {
   }
 }
 
-const loginService = async (req) => {
+const loginService = async (req, res) => {
   try {
     const { email, password } = req
     const data = await User.findOne({ where: { email: email } })
@@ -140,6 +141,20 @@ const loginService = async (req) => {
         message: httpMessage.AUTH.INVALID_CREDENTIALS,
       }
     }
+    const session = await userSession.create({
+      id: uuidV4(),
+      user_id: data.id,
+      expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000),
+    });
+
+    res.cookie("sid", session.id,
+      {
+        httpOnly: true,
+        maxAge: 86400000,
+        sameSite: "lax",
+        secure: false
+      });
+
     return {
       status: true,
       message: httpMessage.SUCCESS.OK

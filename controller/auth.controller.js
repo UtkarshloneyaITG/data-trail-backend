@@ -29,7 +29,7 @@ const signUp = async (req, res) => {
     }
     const data = await authService.signUpService(req.body)
     return res.status(statusCode.CREATED).json({
-      message: "",
+      message: "OTP send to your mail",
       status: true,
       result: { token: data.result }
     })
@@ -59,15 +59,17 @@ const verifyuser = async (req, res) => {
 const loginUser = async (req, res) => {
   try {
     const validate = await loginVaidation(req.body)
+    console.log(req.body,"sdfasdfasdfasdfasdf")
     if (!validate.status) {
       console.log("authentication failed", validate.message)
       return res.status(statusCode.BAD_REQUEST).json({ statusCode: statusCode.BAD_REQUEST, status: false, message: validate.message })
     }
     const userIsVerified = await User.findOne({ where: { email: req.body.email } })
+
     if (!userIsVerified.verifiedAt) {
       return res.status(statusCode.UNAUTHORIZED).json({ status: false, message: httpMessage.AUTH.UNAUTHORIZED })
     }
-    const data = await authService.loginService(req.body)
+    const data = await authService.loginService(req.body, res)
     if (!data?.status) {
       return res.status(statusCode.BAD_REQUEST).json(data)
     } else {
@@ -78,4 +80,4 @@ const loginUser = async (req, res) => {
     res.status(statusCode.INTERNAL_SERVER_ERROR).json({ status: false, message: httpMessage.SERVER.INTERNAL_ERROR })
   }
 }
-module.exports = { signUp, verifyuser,loginUser }
+module.exports = { signUp, verifyuser, loginUser }
